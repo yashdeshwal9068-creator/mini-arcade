@@ -1,1 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reaction Test</title>
+    <style>
+        body {
+            background: #111;
+            color: white;
+            text-align: center;
+            font-family: Arial;
+            padding-top: 100px;
+        }
 
+        #box {
+            width: 300px;
+            height: 300px;
+            background: red;
+            margin: 30px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            cursor: pointer;
+            border-radius: 15px;
+        }
+
+        a {
+            color: cyan;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🎯 Reaction Test</h1>
+
+<div id="box">Wait for Green...</div>
+
+<p id="result"></p>
+
+<a href="../index.html">⬅ Back to Arcade</a>
+
+<script>
+    const box = document.getElementById("box");
+    const result = document.getElementById("result");
+
+    let startTime;
+    let ready = false;
+
+    function startGame() {
+        box.style.background = "red";
+        box.innerText = "Wait for Green...";
+        result.innerText = "";
+        ready = false;
+
+        const delay = Math.random() * 3000 + 2000;
+
+        setTimeout(() => {
+            box.style.background = "green";
+            box.innerText = "CLICK!";
+            startTime = Date.now();
+            ready = true;
+        }, delay);
+    }
+
+    box.onclick = function() {
+        if (!ready) {
+            result.innerText = "Too Soon! Wait for green.";
+        } else {
+            const reactionTime = Date.now() - startTime;
+            result.innerText = "Your Reaction Time: " + reactionTime + " ms";
+            startGame();
+        }
+    };
+
+    startGame();
+</script>
+
+</body>
+</html>
