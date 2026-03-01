@@ -1,0 +1,66 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    height: 100vh;
+    background: #0f0f0f;
+    color: white;
+    overflow: hidden;
+}
+
+.background {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, #1a1a1a, #000);
+    z-index: -1;
+}
+
+.container {
+    text-align: center;
+    padding-top: 60px;
+}
+
+h1 {
+    font-size: 48px;
+    margin-bottom: 10px;
+    color: #00ffcc;
+    text-shadow: 0 0 15px #00ffcc;
+}
+
+.subtitle {
+    margin-bottom: 40px;
+    font-size: 18px;
+    color: #ccc;
+}
+
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 25px;
+    width: 80%;
+    margin: auto;
+}
+
+.game-card {
+    padding: 25px;
+    text-decoration: none;
+    color: white;
+    font-size: 20px;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 2px solid #00ffcc;
+    transition: 0.3s ease;
+}
+
+.game-card:hover {
+    background: #00ffcc;
+    color: black;
+    transform: scale(1.08);
+    box-shadow: 0 0 20px #00ffcc;
+}￼Enter
