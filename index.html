@@ -1,0 +1,189 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import matplotlib.patches as patches
+from scipy.integrate import solve_ivp
+import tkinter as tk
+from tkinter import ttk
+
+"""
+JEE Advanced Level Rotational Motion Simulation
+Tough Problem Inspired Scenario:
+
+A uniform rod of length 2L = 1.2m, mass M = 2kg is hinged at one end O.
+At the other end, a small disc of mass m = 1kg, radius r = 0.1m is attached such that it can rotate freely about its center.
+A string is wound on the disc and passes over a pulley with another mass m2 = 0.8kg hanging.
+The system is released from rest with the rod horizontal.
+
+Find:
+(a) Angular acceleration of rod at t=0
+(b) Tension in string
+(c) Simulate the motion and plot ω vs t, θ vs t
+
+This combines rod rotation, disc rotation, translation, and constraints - very tough JEE Advanced type.
+"""
+
+# Physical Parameters
+L = 0.6          # half length of rod (m)
+M = 2.0          # mass of rod (kg)
+m = 1.0          # mass of disc (kg)
+r = 0.1          # radius of disc (m)
+m2 = 0.8         # hanging mass (kg)
+g = 9.8          # gravity (m/s²)
+
+# Moments of Inertia
+I_rod = (1/3) * M * (2*L)**2   # about hinge O
+I_disc = 0.5 * m * r**2        # about its center
+
+class RotationalSystem:
+    def __init__(self):
+        self.t = 0
+        self.theta = 0.0      # rod angle from horizontal (rad)
+        self.omega = 0.0      # angular velocity of rod
+        self.alpha = 0.0
+        self.tension = 0.0
+    
+    def derivatives(self, t, y):
+        theta, omega = y
+        
+        # Constraint: linear acc of disc end = alpha_rod * 2L = a_tangential
+        # For disc: torque = T*r = I_disc * alpha_disc
+        # Hanging mass: m2*g - T = m2 * a, where a = alpha_disc * r
+        
+        # Effective equations (derived after solving simultaneous)
+        # This is the tough part students struggle with in JEE
+        
+        sin_theta = np.sin(theta)
+        cos_theta = np.cos(theta)
+        
+        # Net torque on rod + disc system about O
+        # Gravity torque on rod: M*g*L*cos_theta (center of mass)
+        # Gravity on disc: m*g*2L*cos_theta
+        # Tension torque: T * 2L (perpendicular component handled in dynamics)
+        
+        # Full coupled equations solved:
+        denom = I_rod + m*(2*L)**2 + I_disc*(2*L/r)**2 + m2*(2*L)**2
+        
+        # Angular acceleration of rod
+        alpha = ( (M*g*L + m*g*2*L)*cos_theta - m2*g*2*L ) / denom
+        
+        # Tension (from hanging mass dynamics)
+        a = alpha * (2*L)   # tangential acc at end (approx for small motion, but exact in constraint)
+        T = m2 * (g - a)
+        
+        return [omega, alpha]
+    
+    def step(self, dt=0.01):
+        # Use simple Euler for visualization (or solve_ivp for accuracy)
+        y0 = [self.theta, self.omega]
+        sol = solve_ivp(self.derivatives, [self.t, self.t+dt], y0, method='RK45', rtol=1e-6)
+        
+        self.theta = sol.y[0][-1]
+        self.omega = sol.y[1][-1]
+        self.t = sol.t[-1]
+        
+        # Update alpha and tension
+        _, alpha = self.derivatives(self.t, [self.theta, self.omega])
+        self.alpha = alpha
+        a = alpha * 2 * L
+        self.tension = m2 * (g - a)
+        
+        # Prevent going beyond vertical for demo
+        if self.theta > np.pi/2:
+            self.theta = np.pi/2
+            self.omega = 0
+
+# Simulation
+system = RotationalSystem()
+
+# Setup Figure
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+fig.suptitle('JEE Advanced Rotational Motion Simulation\nRod + Rotating Disc + Hanging Mass', fontsize=14, fontweight='bold')
+
+# Physics View
+ax1.set_xlim(-0.8, 0.8)
+ax1.set_ylim(-0.3, 0.8)
+ax1.set_aspect('equal')
+ax1.grid(True)
+ax1.set_title('Physical System')
+
+# Plots
+ax2.set_title('Kinematics')
+line_omega, = ax2.plot([], [], 'b-', label='ω (rad/s)')
+line_theta, = ax2.plot([], [], 'r-', label='θ (rad)')
+ax2.set_xlabel('Time (s)')
+ax2.set_ylabel('Value')
+ax2.legend()
+ax2.grid(True)
+
+# Animation objects
+rod_line, = ax1.plot([], [], 'k-', lw=6)
+disc_circle = plt.Circle((0,0), r, fc='blue', alpha=0.7)
+ax1.add_patch(disc_circle)
+mass2_rect = patches.Rectangle((0,0), 0.08, 0.15, fc='red')
+
+time_text = ax1.text(0.02, 0.95, '', transform=ax1.transAxes, fontsize=12)
+info_text = ax1.text(0.02, 0.85, '', transform=ax1.transAxes, fontsize=10)
+
+t_data, omega_data, theta_data = [], [], []
+
+def init():
+    rod_line.set_data([], [])
+    disc_circle.center = (0,0)
+    return rod_line, disc_circle
+
+def animate(frame):
+    system.step(dt=0.016)  # \~60 FPS
+    
+    # Update rod
+    x_end = 2*L * np.cos(system.theta)
+    y_end = 2*L * np.sin(system.theta)
+    rod_line.set_data([0, x_end], [0, y_end])
+    
+    # Update disc position
+    disc_circle.center = (x_end, y_end)
+    
+    # Update hanging mass (simplified position)
+    mass_y = 0.4 - system.theta * 0.8  # visual only
+    mass2_rect.set_xy((0.5, mass_y))
+    if mass2_rect not in ax1.patches:
+        ax1.add_patch(mass2_rect)
+    
+    t_data.append(system.t)
+    omega_data.append(system.omega)
+    theta_data.append(system.theta)
+    
+    if len(t_data) > 200:
+        t_data.pop(0)
+        omega_data.pop(0)
+        theta_data.pop(0)
+    
+    line_omega.set_data(t_data, omega_data)
+    line_theta.set_data(t_data, theta_data)
+    
+    ax2.set_xlim(0, max(t_data[-1], 5))
+    ax2.set_ylim(-1, max(max(omega_data), max(theta_data)) * 1.1)
+    
+    time_text.set_text(f't = {system.t:.2f} s\nθ = {np.degrees(system.theta):.1f}°')
+    info_text.set_text(f'ω = {system.omega:.3f} rad/s\nα = {system.alpha:.3f} rad/s²\nT = {system.tension:.2f} N')
+    
+    return rod_line, disc_circle, line_omega, line_theta, time_text, info_text
+
+ani = FuncAnimation(fig, animate, init_func=init, interval=16, blit=False, cache_frame_data=False)
+
+plt.tight_layout()
+plt.show()
+
+# Initial Question Print
+print("="*80)
+print("JEE ADVANCED LEVEL ROTATIONAL MOTION PROBLEM SIMULATION")
+print("="*80)
+print("A uniform rod (length 1.2m, mass 2kg) is hinged at O.")
+print("A disc (mass 1kg, r=0.1m) is attached at the free end (can rotate freely).")
+print("String wound on disc → pulley → hanging mass 0.8kg.")
+print("Released from horizontal position.")
+print("\nAt t=0 (θ=0):")
+print(f"Angular acceleration α = {system.alpha:.3f} rad/s²")
+print(f"Initial Tension T = {system.tension:.2f} N")
+print("\nRun the simulation to see full motion!")
+print("This level of multi-body constraint + rotation is among the toughest in JEE Advanced.")
